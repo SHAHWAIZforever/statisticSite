@@ -15,14 +15,13 @@ table input {width: 100%; border: none; text-align: center;}
 table input:focus {outline: none;}
 .small-text {font-size: 14px; color: #555;}
 .summary {background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 10px;}
-.code {background:#f0f0f0;padding:5px 10px;border-radius:5px;font-family:monospace;}
 </style>
 </head>
 <body>
 
 <nav class="navbar navbar-dark bg-dark">
 <div class="container-fluid">
-<span class="navbar-brand">Statistics V1 / Beta</span>
+<span class="navbar-brand">Advanced Statistical Graph Solution (Beta) </span>
 </div>
 </nav>
 
@@ -35,7 +34,14 @@ table input:focus {outline: none;}
 <select id="graphType" class="form-select mb-3" onchange="renderForm(); addGuide(this.value);">
 <option value="fd">Frequency Distribution Table</option>
 <option value="simpleBar">Simple Bar Diagram</option>
+<option value="multipleBar">Multiple Bar Diagram</option>
+<option value="componentBar">Component Bar Diagram</option>
+<option value="histogram">Histogram</option>
+<option value="polygon">Frequency Polygon</option>
+<option value="ogive">Ogive</option>
+<option value="timeSeries">Time Series</option>
 <option value="pie">Pie Chart</option>
+<option value="stemLeaf">Stem & Leaf</option>
 </select>
 <div id="inputArea"></div>
 <button class="btn btn-primary w-100 mt-3" onclick="generate()">Generate Solution</button>
@@ -55,6 +61,8 @@ table input:focus {outline: none;}
 
 <script>
 let chart;
+
+// Initial load
 renderForm();
 addGuide('fd');
 
@@ -63,33 +71,39 @@ function renderForm(){
     let area = document.getElementById('inputArea');
     area.innerHTML = "";
 
-    if(type==='fd'){
-        area.innerHTML = `
-            <label>Enter Raw Data (comma separated)</label>
-            <textarea id='rawFD' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>
-            <small class="text-muted">Number of classes will be calculated automatically using Sturges' formula.</small>
-        `;
+    if(type === 'fd'){
+        area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
+            <textarea id='rawFD' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
     }
 
     if(['simpleBar','pie'].includes(type)){
-        area.innerHTML = `
+        area.innerHTML = `<label>Enter Categories and Frequencies</label>
             <table class='table table-bordered text-center'>
                 <thead><tr><th>Category</th><th>Frequency</th></tr></thead>
                 <tbody id='simpleTable'>
                     <tr><td><input></td><td><input type='number'></td></tr>
                 </tbody>
             </table>
-            <button class='btn btn-sm btn-secondary w-100' onclick='addRow("simpleTable",2)'>Add Row</button>
-        `;
+            <button class='btn btn-sm btn-secondary w-100' onclick='addRow("simpleTable",2)'>Add Row</button>`;
+    }
+
+    if(['histogram','polygon','ogive'].includes(type)){
+        area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
+            <textarea id='groupRawData' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
+    }
+
+    if(type==='stemLeaf'){
+        area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
+            <textarea id='stemData' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
     }
 }
 
 function addRow(id,cols){
-    let t=document.getElementById(id);
-    let r=t.insertRow();
+    let t = document.getElementById(id);
+    let r = t.insertRow();
     for(let i=0;i<cols;i++){
-        let c=r.insertCell();
-        c.innerHTML=i===0?"<input>":"<input type='number'>";
+        let c = r.insertCell();
+        c.innerHTML = i===0?"<input>":"<input type='number'>";
     }
 }
 
@@ -100,50 +114,32 @@ function generate(){
     let sol = document.getElementById('solutionArea');
     sol.innerHTML = "";
 
+    // ---------------- FD ----------------
     if(type==='fd'){
         let raw = document.getElementById('rawFD').value.split(',')
                   .map(Number).filter(v=>!isNaN(v)).sort((a,b)=>a-b);
         if(raw.length===0) return alert("Enter raw data");
 
         let n = raw.length;
-        let k = Math.ceil(1 + 3.322 * Math.log10(n));
+        let k = Math.ceil(1+3.322*Math.log10(n));
         let min = Math.min(...raw);
         let max = Math.max(...raw);
-        let width = Math.ceil((max - min)/k);
-
-        // Explanation of FD steps
-        let stepText = `<div class="summary">
-            <h6>Step-by-Step Calculations:</h6>
-            <p><b>1. Number of data points (n):</b> ${n}</p>
-            <p><b>2. Number of classes (k) using Sturges' formula:</b> ceil(1 + 3.322 log10(n)) = ${k}</p>
-            <p><b>3. Class width (w):</b> ceil((Max - Min)/k) = ceil((${max}-${min})/${k}) = ${width}</p>
-            <p><b>4. Class intervals:</b> Starting from Min, each class width = ${width}</p>
-        </div>`;
+        let width = Math.ceil((max-min)/k);
 
         let lower=[], upper=[], freq=[], tally=[];
         for(let i=0;i<k;i++){
             lower[i] = min + i*width;
             upper[i] = lower[i] + width;
-            freq[i] = 0;
-            tally[i] = '';
+            freq[i] = 0; tally[i]='';
         }
 
-        // Populate frequency & tally
-        raw.forEach(val=>{
+        raw.forEach(v=>{
             for(let i=0;i<k;i++){
-                if(val>=lower[i] && val<upper[i]){
-                    freq[i]++;
-                    tally[i]+='|';
-                    break;
-                }
-                if(i===k-1 && val===max){
-                    freq[i]++;
-                    tally[i]+='|';
-                }
+                if(v>=lower[i] && v<upper[i]){ freq[i]++; tally[i]+='|'; break; }
+                if(i===k-1 && v===max){ freq[i]++; tally[i]+='|';}
             }
         });
 
-        // Midpoints, CF, RF
         let mid=[], cf=[], rf=[], cum=0, total=freq.reduce((a,b)=>a+b,0);
         for(let i=0;i<k;i++){
             mid[i] = (lower[i]+upper[i])/2;
@@ -152,67 +148,53 @@ function generate(){
             rf[i] = ((freq[i]/total)*100).toFixed(2);
         }
 
-        // Step-by-step for table columns
-        stepText += `<div class="summary">
-            <h6>How Table Values are Calculated:</h6>
-            <p><b>Tally:</b> Each '|' represents one occurrence in the class.</p>
-            <p><b>F (Frequency):</b> Count of values in the class (length of tally).</p>
-            <p><b>Midpoint:</b> (Lower + Upper)/2. Example for first class: (${lower[0]}+${upper[0]})/2 = ${mid[0]}</p>
-            <p><b>Cumulative Frequency (CF):</b> Sum of frequencies up to that class.</p>
-            <p><b>Relative Frequency (RF%):</b> (Frequency / Total Frequency) × 100. Example for first class: (${freq[0]}/${total})×100 = ${rf[0]}%</p>
-        </div>`;
-
-        // Mean
-        let mean = (mid.reduce((sum,m,i)=>sum + m*freq[i],0)/total).toFixed(2);
-        // Median
-        let medianClassIndex = cf.findIndex(c=>c>=total/2);
-        let L = lower[medianClassIndex], F = freq[medianClassIndex];
-        let CF_before = medianClassIndex===0?0:cf[medianClassIndex-1];
+        let mean = (mid.reduce((s,m,i)=>s + m*freq[i],0)/total).toFixed(2);
+        let medianIndex = cf.findIndex(c=>c>=total/2);
+        let L = lower[medianIndex], F = freq[medianIndex];
+        let CF_before = medianIndex===0?0:cf[medianIndex-1];
         let median = (L + ((total/2 - CF_before)/F)*width).toFixed(2);
-        // Mode
         let modalIndex = freq.indexOf(Math.max(...freq));
-        let f1 = freq[modalIndex], f0 = modalIndex===0?0:freq[modalIndex-1], f2 = modalIndex===k-1?0:freq[modalIndex+1];
-        let mode = (lower[modalIndex] + ((f1 - f0)/((f1-f0)+(f1-f2)))*width).toFixed(2);
+        let f1=freq[modalIndex], f0=modalIndex===0?0:freq[modalIndex-1], f2=modalIndex===k-1?0:freq[modalIndex+1];
+        let mode = (lower[modalIndex] + ((f1-f0)/((f1-f0)+(f1-f2)))*width).toFixed(2);
 
-        stepText += `<div class="summary">
-            <h6>Formulas for Mean, Median, Mode:</h6>
-            <p><b>Mean:</b> Σ(mid × F)/N = ${mean}</p>
-            <p><b>Median:</b> L + ((N/2 - CF_before)/F) × w = ${median}</p>
-            <p><b>Mode:</b> L + ((f1-f0)/((f1-f0)+(f1-f2))) × w = ${mode}</p>
+        // Show calculation steps
+        let calcSteps = `<div class="summary">
+            <h6>Step-by-Step Calculations</h6>
+            <p>Number of data points n = ${n}</p>
+            <p>Number of classes k = ${k} (Sturges formula: 1 + 3.322 log10 n)</p>
+            <p>Class width w = ${width} (Range/Classes = (${max}-${min})/${k})</p>
+            <p>Midpoint = (Lower + Upper)/2 for each class</p>
+            <p>Cumulative Frequency = sum of previous frequencies up to that class</p>
+            <p>Relative Frequency % = (F/N)*100</p>
+            <p>Mean = Σ(mid × F)/N = ${mean}</p>
+            <p>Median = L + ((N/2 - CF_previous)/F) * w = ${median}</p>
+            <p>Mode = L + ((f1-f0)/((f1-f0)+(f1-f2)))*w = ${mode}</p>
         </div>`;
 
-        // Table
-        sol.innerHTML = stepText + `
-        <h5>Frequency Distribution Table</h5>
+        sol.innerHTML = calcSteps + `<h5>Frequency Distribution Table</h5>
         <table class='table table-bordered text-center'>
-        <thead><tr><th>Class</th><th>Tally</th><th>F</th><th>Mid</th><th>CF</th><th>RF%</th></tr></thead>
-        <tbody>${lower.map((l,i)=>`<tr>
-            <td>${l}-${upper[i]}</td>
-            <td>${tally[i]}</td>
-            <td>${freq[i]}</td>
-            <td>${mid[i]}</td>
-            <td>${cf[i]}</td>
-            <td>${rf[i]}%</td>
-        </tr>`).join('')}</tbody></table>`;
+            <thead><tr><th>Class</th><th>Tally</th><th>F</th><th>Mid</th><th>CF</th><th>RF%</th></tr></thead>
+            <tbody>${lower.map((l,i)=>`<tr>
+                <td>${l}-${upper[i]}</td>
+                <td>${tally[i]}</td>
+                <td>${freq[i]}</td>
+                <td>${mid[i]}</td>
+                <td>${cf[i]}</td>
+                <td>${rf[i]}%</td>
+            </tr>`).join('')}</tbody>
+        </table>`;
 
-        // Chart
         chart = new Chart(ctx,{
             type:'bar',
             data:{
                 labels: lower.map((l,i)=>`${l}-${upper[i]}`),
-                datasets:[{
-                    label:'Frequency',
-                    data: freq,
-                    backgroundColor:'rgba(54,162,235,0.5)',
-                    borderColor:'rgba(54,162,235,1)',
-                    borderWidth:1
-                }]
+                datasets:[{label:'Frequency', data:freq, backgroundColor:'rgba(54,162,235,0.5)', borderColor:'rgba(54,162,235,1)', borderWidth:1}]
             },
             options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, precision:0}}}
         });
     }
 
-    // Simple bar & pie charts
+    // ---------------- Simple Bar / Pie ----------------
     if(['simpleBar','pie'].includes(type)){
         let table = document.getElementById('simpleTable');
         let labels=[], data=[];
@@ -224,15 +206,19 @@ function generate(){
         }
         if(labels.length===0) return alert("Enter data");
 
+        let total = data.reduce((a,b)=>a+b,0);
+        let percentages = data.map(d=>(d/total*100).toFixed(2));
+        let angles = percentages.map(p=>(p*360/100).toFixed(2));
+
         chart = new Chart(ctx,{
             type: type==='simpleBar'?'bar':'pie',
             data:{
-                labels: labels,
+                labels:labels,
                 datasets:[{
                     label:'Frequency',
-                    data: data,
-                    backgroundColor: labels.map(()=>`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`),
-                    borderColor: labels.map(()=>`rgba(0,0,0,0.8)`),
+                    data:data,
+                    backgroundColor:labels.map(()=>`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`),
+                    borderColor:labels.map(()=>`rgba(0,0,0,0.8)`),
                     borderWidth:1
                 }]
             },
@@ -241,22 +227,36 @@ function generate(){
 
         sol.innerHTML = `<h5>${type==='simpleBar'?'Simple Bar Diagram':'Pie Chart'}</h5>
             <table class='table table-bordered text-center'>
-            <thead><tr><th>Category</th><th>Frequency</th></tr></thead>
-            <tbody>${labels.map((l,i)=>`<tr><td>${l}</td><td>${data[i]}</td></tr>`).join('')}</tbody></table>`;
+                <thead><tr><th>Category</th><th>Frequency</th><th>%</th><th>Angle (°)</th></tr></thead>
+                <tbody>${labels.map((l,i)=>`<tr>
+                    <td>${l}</td>
+                    <td>${data[i]}</td>
+                    <td>${percentages[i]}%</td>
+                    <td>${angles[i]}°</td>
+                </tr>`).join('')}</tbody>
+            </table>
+            <div class="summary">
+                <h6>Explanation</h6>
+                <p>Percentage = (Frequency / Total) × 100</p>
+                <p>Angle for pie chart = (Percentage × 360) / 100</p>
+            </div>`;
     }
 }
 
 function addGuide(type){
-    let g=document.getElementById('guide');
+    let g = document.getElementById('guide');
     let guides = {
-        fd:"Enter raw data. System automatically creates class intervals, tally, frequency, midpoint, cumulative frequency, relative frequency, mean, median, mode, and chart with step-by-step calculations showing how each value is obtained.",
-        simpleBar:"Enter categories and frequency. Bar chart will be generated automatically.",
-        pie:"Enter categories and frequency. Pie chart will be generated automatically."
+        fd:"Enter raw data. System automatically calculates class intervals, tally, frequency, mid, cumulative frequency, relative frequency, mean, median, mode, and chart above.",
+        histogram:"Enter raw data. System will automatically calculate grouped data, frequencies, and histogram.",
+        polygon:"Enter raw data. System will automatically create frequency polygon from grouped data.",
+        ogive:"Enter raw data. System will calculate cumulative frequencies and draw ogive.",
+        simpleBar:"Enter categories and frequencies. Simple bar chart generated automatically.",
+        pie:"Enter categories and frequencies. Pie chart shows percentages and angles.",
+        stemLeaf:"Enter raw data. System will generate stem & leaf plot automatically."
     };
     g.innerHTML = "<hr><h6>Guide</h6><p class='small-text'>"+(guides[type]||"")+"</p>";
 }
 </script>
 
 </body>
-
 </html>
