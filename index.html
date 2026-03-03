@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>𐌔𐋅𐌀𐋅Ꮤ𐌀𐌉Ɀ</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="icon" type="image/jpeg" href="icon.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {background: #eef2f7; font-family: "Segoe UI", sans-serif;}
+.card {border-radius: 18px;}
+canvas {max-height: 420px;}
+table input {width: 100%; border: none; text-align: center;}
+table input:focus {outline: none;}
+.small-text {font-size: 14px; color: #555;}
+.summary {background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 10px;}
+.code {background:#f0f0f0;padding:5px 10px;border-radius:5px;font-family:monospace;}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+<div class="container-fluid">
+<span class="navbar-brand">𐌔𐋅𐌀𐋅Ꮤ𐌀𐌉Ɀ</span>
+</div>
+</nav>
+
+<div class="container my-4">
+<div class="row g-4">
+
+<div class="col-lg-4">
+<div class="card p-3 shadow">
+<h5>Select Statistical Tool</h5>
+<select id="graphType" class="form-select mb-3" onchange="renderForm(); addGuide(this.value);">
+<option value="fd">Frequency Distribution Table</option>
+<option value="simpleBar">Simple Bar Diagram</option>
+<option value="pie">Pie Chart</option>
+</select>
+<div id="inputArea"></div>
+<button class="btn btn-primary w-100 mt-3" onclick="generate()">Generate Solution</button>
+</div>
+</div>
+
+<div class="col-lg-8">
+<div class="card p-3 shadow">
+<div id="solutionArea"></div>
+<canvas id="chartCanvas"></canvas>
+<div id="guide" class="mt-4"></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+let chart;
+renderForm();
+addGuide('fd');
+
+function renderForm(){
+    let type = document.getElementById('graphType').value;
+    let area = document.getElementById('inputArea');
+    area.innerHTML = "";
+
+    if(type==='fd'){
+        area.innerHTML = `
+            <label>Enter Raw Data (comma separated)</label>
+            <textarea id='rawFD' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>
+            <small class="text-muted">Number of classes will be calculated automatically using Sturges' formula.</small>
+        `;
+    }
+
+    if(['simpleBar','pie'].includes(type)){
+        area.innerHTML = `
+            <table class='table table-bordered text-center'>
+                <thead><tr><th>Category</th><th>Frequency</th></tr></thead>
+                <tbody id='simpleTable'>
+                    <tr><td><input></td><td><input type='number'></td></tr>
+                </tbody>
+            </table>
+            <button class='btn btn-sm btn-secondary w-100' onclick='addRow("simpleTable",2)'>Add Row</button>
+        `;
+    }
+}
+
+function addRow(id,cols){
+    let t=document.getElementById(id);
+    let r=t.insertRow();
+    for(let i=0;i<cols;i++){
+        let c=r.insertCell();
+        c.innerHTML=i===0?"<input>":"<input type='number'>";
+    }
+}
+
+function generate(){
+    if(chart) chart.destroy();
+    let type = document.getElementById('graphType').value;
+    let ctx = document.getElementById('chartCanvas');
+    let sol = document.getElementById('solutionArea');
+    sol.innerHTML = "";
+
+    if(type==='fd'){
+        let raw = document.getElementById('rawFD').value.split(',')
+                  .map(Number).filter(v=>!isNaN(v)).sort((a,b)=>a-b);
+        if(raw.length===0) return alert("Enter raw data");
+
+        let n = raw.length;
+        let k = Math.ceil(1 + 3.322 * Math.log10(n));
+        let min = Math.min(...raw);
+        let max = Math.max(...raw);
+        let width = Math.ceil((max - min)/k);
+
+        // Explanation of FD steps
+        let stepText = `<div class="summary">
+            <h6>Step-by-Step Calculations:</h6>
+            <p><b>1. Number of data points (n):</b> ${n}</p>
+            <p><b>2. Number of classes (k) using Sturges' formula:</b> ceil(1 + 3.322 log10(n)) = ${k}</p>
+            <p><b>3. Class width (w):</b> ceil((Max - Min)/k) = ceil((${max}-${min})/${k}) = ${width}</p>
+            <p><b>4. Class intervals:</b> Starting from Min, each class width = ${width}</p>
+        </div>`;
+
+        let lower=[], upper=[], freq=[], tally=[];
+        for(let i=0;i<k;i++){
+            lower[i] = min + i*width;
+            upper[i] = lower[i] + width;
+            freq[i] = 0;
+            tally[i] = '';
+        }
+
+        // Populate frequency & tally
+        raw.forEach(val=>{
+            for(let i=0;i<k;i++){
+                if(val>=lower[i] && val<upper[i]){
+                    freq[i]++;
+                    tally[i]+='|';
+                    break;
+                }
+                if(i===k-1 && val===max){
+                    freq[i]++;
+                    tally[i]+='|';
+                }
+            }
+        });
+
+        // Midpoints, CF, RF
+        let mid=[], cf=[], rf=[], cum=0, total=freq.reduce((a,b)=>a+b,0);
+        for(let i=0;i<k;i++){
+            mid[i] = (lower[i]+upper[i])/2;
+            cum += freq[i];
+            cf[i] = cum;
+            rf[i] = ((freq[i]/total)*100).toFixed(2);
+        }
+
+        // Step-by-step for table columns
+        stepText += `<div class="summary">
+            <h6>How Table Values are Calculated:</h6>
+            <p><b>Tally:</b> Each '|' represents one occurrence in the class.</p>
+            <p><b>F (Frequency):</b> Count of values in the class (length of tally).</p>
+            <p><b>Midpoint:</b> (Lower + Upper)/2. Example for first class: (${lower[0]}+${upper[0]})/2 = ${mid[0]}</p>
+            <p><b>Cumulative Frequency (CF):</b> Sum of frequencies up to that class.</p>
+            <p><b>Relative Frequency (RF%):</b> (Frequency / Total Frequency) × 100. Example for first class: (${freq[0]}/${total})×100 = ${rf[0]}%</p>
+        </div>`;
+
+        // Mean
+        let mean = (mid.reduce((sum,m,i)=>sum + m*freq[i],0)/total).toFixed(2);
+        // Median
+        let medianClassIndex = cf.findIndex(c=>c>=total/2);
+        let L = lower[medianClassIndex], F = freq[medianClassIndex];
+        let CF_before = medianClassIndex===0?0:cf[medianClassIndex-1];
+        let median = (L + ((total/2 - CF_before)/F)*width).toFixed(2);
+        // Mode
+        let modalIndex = freq.indexOf(Math.max(...freq));
+        let f1 = freq[modalIndex], f0 = modalIndex===0?0:freq[modalIndex-1], f2 = modalIndex===k-1?0:freq[modalIndex+1];
+        let mode = (lower[modalIndex] + ((f1 - f0)/((f1-f0)+(f1-f2)))*width).toFixed(2);
+
+        stepText += `<div class="summary">
+            <h6>Formulas for Mean, Median, Mode:</h6>
+            <p><b>Mean:</b> Σ(mid × F)/N = ${mean}</p>
+            <p><b>Median:</b> L + ((N/2 - CF_before)/F) × w = ${median}</p>
+            <p><b>Mode:</b> L + ((f1-f0)/((f1-f0)+(f1-f2))) × w = ${mode}</p>
+        </div>`;
+
+        // Table
+        sol.innerHTML = stepText + `
+        <h5>Frequency Distribution Table</h5>
+        <table class='table table-bordered text-center'>
+        <thead><tr><th>Class</th><th>Tally</th><th>F</th><th>Mid</th><th>CF</th><th>RF%</th></tr></thead>
+        <tbody>${lower.map((l,i)=>`<tr>
+            <td>${l}-${upper[i]}</td>
+            <td>${tally[i]}</td>
+            <td>${freq[i]}</td>
+            <td>${mid[i]}</td>
+            <td>${cf[i]}</td>
+            <td>${rf[i]}%</td>
+        </tr>`).join('')}</tbody></table>`;
+
+        // Chart
+        chart = new Chart(ctx,{
+            type:'bar',
+            data:{
+                labels: lower.map((l,i)=>`${l}-${upper[i]}`),
+                datasets:[{
+                    label:'Frequency',
+                    data: freq,
+                    backgroundColor:'rgba(54,162,235,0.5)',
+                    borderColor:'rgba(54,162,235,1)',
+                    borderWidth:1
+                }]
+            },
+            options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, precision:0}}}
+        });
+    }
+
+    // Simple bar & pie charts
+    if(['simpleBar','pie'].includes(type)){
+        let table = document.getElementById('simpleTable');
+        let labels=[], data=[];
+        for(let i=0;i<table.rows.length;i++){
+            let cells = table.rows[i].cells;
+            let label = cells[0].querySelector('input').value;
+            let val = Number(cells[1].querySelector('input').value);
+            if(label && !isNaN(val)){labels.push(label); data.push(val);}
+        }
+        if(labels.length===0) return alert("Enter data");
+
+        chart = new Chart(ctx,{
+            type: type==='simpleBar'?'bar':'pie',
+            data:{
+                labels: labels,
+                datasets:[{
+                    label:'Frequency',
+                    data: data,
+                    backgroundColor: labels.map(()=>`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`),
+                    borderColor: labels.map(()=>`rgba(0,0,0,0.8)`),
+                    borderWidth:1
+                }]
+            },
+            options:{responsive:true, plugins:{legend:{position:'right'}}}
+        });
+
+        sol.innerHTML = `<h5>${type==='simpleBar'?'Simple Bar Diagram':'Pie Chart'}</h5>
+            <table class='table table-bordered text-center'>
+            <thead><tr><th>Category</th><th>Frequency</th></tr></thead>
+            <tbody>${labels.map((l,i)=>`<tr><td>${l}</td><td>${data[i]}</td></tr>`).join('')}</tbody></table>`;
+    }
+}
+
+function addGuide(type){
+    let g=document.getElementById('guide');
+    let guides = {
+        fd:"Enter raw data. System automatically creates class intervals, tally, frequency, midpoint, cumulative frequency, relative frequency, mean, median, mode, and chart with step-by-step calculations showing how each value is obtained.",
+        simpleBar:"Enter categories and frequency. Bar chart will be generated automatically.",
+        pie:"Enter categories and frequency. Pie chart will be generated automatically."
+    };
+    g.innerHTML = "<hr><h6>Guide</h6><p class='small-text'>"+(guides[type]||"")+"</p>";
+}
+</script>
+
+</body>
+</html>
