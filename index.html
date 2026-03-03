@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>𐌔𐋅𐌀𐋅Ꮤ𐌀𐌉Ɀ</title>
+<title>SHAHWAIZ</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="icon" type="image/jpeg" href="icon.png">
+    <link rel="icon" type="image/jpeg" href="icon.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body {background: #eef2f7; font-family: "Segoe UI", sans-serif;}
@@ -21,7 +21,7 @@ table input:focus {outline: none;}
 
 <nav class="navbar navbar-dark bg-dark">
 <div class="container-fluid">
-<span class="navbar-brand">Advanced Statistical Graph Solution (Beta) </span>
+<span class="navbar-brand">BETA</span>
 </div>
 </nav>
 
@@ -39,7 +39,6 @@ table input:focus {outline: none;}
 <option value="histogram">Histogram</option>
 <option value="polygon">Frequency Polygon</option>
 <option value="ogive">Ogive</option>
-<option value="timeSeries">Time Series</option>
 <option value="pie">Pie Chart</option>
 <option value="stemLeaf">Stem & Leaf</option>
 </select>
@@ -61,64 +60,55 @@ table input:focus {outline: none;}
 
 <script>
 let chart;
+let datasetCount = 1;
 
 // Initial load
 renderForm();
 addGuide('fd');
 
+// ---------------- Render form ----------------
 function renderForm(){
     let type = document.getElementById('graphType').value;
     let area = document.getElementById('inputArea');
     area.innerHTML = "";
+    datasetCount = 1;
 
-    // Frequency Distribution
-    if(type==='fd'){
+    if(type==='fd' || type==='histogram' || type==='polygon' || type==='ogive' || type==='stemLeaf'){
         area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
-            <textarea id='rawFD' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
+            <textarea id='rawData' class='form-control mb-2' placeholder="12,15,18,20"></textarea>`;
     }
 
-    // Simple Bar / Pie
-    if(['simpleBar','pie'].includes(type)){
+    if(type==='simpleBar' || type==='pie'){
         area.innerHTML = `<label>Enter Categories and Frequencies</label>
             <table class='table table-bordered text-center'>
-                <thead><tr><th>Category</th><th>Frequency</th></tr></thead>
-                <tbody id='simpleTable'>
-                    <tr><td><input></td><td><input type='number'></td></tr>
-                </tbody>
+            <thead><tr><th>Category</th><th>Frequency</th></tr></thead>
+            <tbody id='simpleTable'><tr><td><input></td><td><input type='number'></td></tr></tbody>
             </table>
             <button class='btn btn-sm btn-secondary w-100' onclick='addRow("simpleTable",2)'>Add Row</button>`;
     }
 
-    // Multiple / Component Bar Diagram
-    if(['multipleBar','componentBar'].includes(type)){
+    if(type==='multipleBar' || type==='componentBar'){
         area.innerHTML = `<label>Enter Categories and Dataset Values</label>
             <table class='table table-bordered text-center'>
-                <thead id="multiHeader">
-                    <tr><th>Category</th><th>Dataset 1</th></tr>
-                </thead>
-                <tbody id='multiTable'>
-                    <tr><td><input></td><td><input type='number'></td></tr>
-                </tbody>
+            <thead id='multiHeader'><tr><th>Category</th><th>Dataset 1</th></tr></thead>
+            <tbody id='multiTable'><tr><td><input></td><td><input type='number'></td></tr></tbody>
             </table>
             <button class='btn btn-sm btn-secondary w-100 mb-1' onclick='addRow("multiTable",2)'>Add Row</button>
             <button class='btn btn-sm btn-secondary w-100' onclick='addDataset()'>Add Dataset Column</button>`;
-        datasetCount = 1; // keep track of datasets
-    }
-
-    // Histogram / Polygon / Ogive
-    if(['histogram','polygon','ogive'].includes(type)){
-        area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
-            <textarea id='groupRawData' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
-    }
-
-    // Stem & Leaf
-    if(type==='stemLeaf'){
-        area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
-            <textarea id='stemData' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
     }
 }
 
-let datasetCount = 1;
+// ---------------- Add row ----------------
+function addRow(id,cols){
+    let t = document.getElementById(id);
+    let r = t.insertRow();
+    for(let i=0;i<cols;i++){
+        let c = r.insertCell();
+        c.innerHTML = i===0?"<input>":"<input type='number'>";
+    }
+}
+
+// ---------------- Add dataset column ----------------
 function addDataset(){
     datasetCount++;
     let header = document.getElementById("multiHeader").rows[0];
@@ -133,16 +123,7 @@ function addDataset(){
     }
 }
 
-function addRow(id,cols){
-    let t = document.getElementById(id);
-    let r = t.insertRow();
-    for(let i=0;i<cols;i++){
-        let c = r.insertCell();
-        c.innerHTML = i===0?"<input>":"<input type='number'>";
-    }
-}
-
-// Main generate function
+// ---------------- Generate charts ----------------
 function generate(){
     if(chart) chart.destroy();
     let type = document.getElementById('graphType').value;
@@ -150,16 +131,14 @@ function generate(){
     let sol = document.getElementById('solutionArea');
     sol.innerHTML = "";
 
-    // ---------------- FD ----------------
+    // ---------------- Frequency Distribution Table ----------------
     if(type==='fd'){
-        let raw = document.getElementById('rawFD').value.split(',')
-                  .map(Number).filter(v=>!isNaN(v)).sort((a,b)=>a-b);
+        let raw = document.getElementById('rawData').value.split(',').map(Number).filter(v=>!isNaN(v));
         if(raw.length===0) return alert("Enter raw data");
 
         let n = raw.length;
         let k = Math.ceil(1+3.322*Math.log10(n));
-        let min = Math.min(...raw);
-        let max = Math.max(...raw);
+        let min = Math.min(...raw), max = Math.max(...raw);
         let width = Math.ceil((max-min)/k);
 
         let lower=[], upper=[], freq=[], tally=[];
@@ -179,8 +158,7 @@ function generate(){
         let mid=[], cf=[], rf=[], cum=0, total=freq.reduce((a,b)=>a+b,0);
         for(let i=0;i<k;i++){
             mid[i] = (lower[i]+upper[i])/2;
-            cum += freq[i];
-            cf[i] = cum;
+            cum += freq[i]; cf[i]=cum;
             rf[i] = ((freq[i]/total)*100).toFixed(2);
         }
 
@@ -195,94 +173,68 @@ function generate(){
 
         sol.innerHTML = `<div class="summary">
             <h6>Step-by-Step Calculations</h6>
-            <p>Number of data points n = ${n}</p>
-            <p>Number of classes k = ${k} (Sturges formula: 1 + 3.322 log10 n)</p>
-            <p>Class width w = ${width} (Range/Classes)</p>
-            <p>Mean = ${mean}, Median = ${median}, Mode = ${mode}</p>
+            <p>n=${n}, Classes k=${k}, Width=${width}</p>
+            <p>Mean=${mean}, Median=${median}, Mode=${mode}</p>
         </div>
         <h5>Frequency Distribution Table</h5>
         <table class='table table-bordered text-center'>
-            <thead><tr><th>Class</th><th>Tally</th><th>F</th><th>Mid</th><th>CF</th><th>RF%</th></tr></thead>
-            <tbody>${lower.map((l,i)=>`<tr>
-                <td>${l}-${upper[i]}</td>
-                <td>${tally[i]}</td>
-                <td>${freq[i]}</td>
-                <td>${mid[i]}</td>
-                <td>${cf[i]}</td>
-                <td>${rf[i]}%</td>
-            </tr>`).join('')}</tbody>
-        </table>`;
+        <thead><tr><th>Class</th><th>Tally</th><th>F</th><th>Mid</th><th>CF</th><th>RF%</th></tr></thead>
+        <tbody>${lower.map((l,i)=>`<tr>
+            <td>${l}-${upper[i]}</td><td>${tally[i]}</td><td>${freq[i]}</td>
+            <td>${mid[i]}</td><td>${cf[i]}</td><td>${rf[i]}%</td>
+        </tr>`).join('')}</tbody></table>`;
 
         chart = new Chart(ctx,{
             type:'bar',
-            data:{
-                labels: lower.map((l,i)=>`${l}-${upper[i]}`),
-                datasets:[{label:'Frequency', data:freq, backgroundColor:'rgba(54,162,235,0.5)', borderColor:'rgba(54,162,235,1)', borderWidth:1}]
-            },
+            data:{labels: lower.map((l,i)=>`${l}-${upper[i]}`), datasets:[{label:'Frequency', data:freq, backgroundColor:'rgba(54,162,235,0.5)', borderColor:'rgba(54,162,235,1)', borderWidth:1}]},
             options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, precision:0}}}
         });
     }
 
-    // ---------------- Simple / Pie ----------------
-    if(['simpleBar','pie'].includes(type)){
+    // ---------------- Simple Bar / Pie ----------------
+    if(type==='simpleBar' || type==='pie'){
         let table = document.getElementById('simpleTable');
         let labels=[], data=[];
-        for(let i=0;i<table.rows.length;i++){
-            let cells = table.rows[i].cells;
-            let label = cells[0].querySelector('input').value;
-            let val = Number(cells[1].querySelector('input').value);
-            if(label && !isNaN(val)){labels.push(label); data.push(val);}
+        for(let r of table.rows){
+            let l = r.cells[0].querySelector('input').value;
+            let v = Number(r.cells[1].querySelector('input').value);
+            if(l && !isNaN(v)){labels.push(l); data.push(v);}
         }
         if(labels.length===0) return alert("Enter data");
 
-        let total = data.reduce((a,b)=>a+b,0);
-        let percentages = data.map(d=>(d/total*100).toFixed(2));
-        let angles = percentages.map(p=>(p*360/100).toFixed(2));
-
         chart = new Chart(ctx,{
             type: type==='simpleBar'?'bar':'pie',
-            data:{
-                labels:labels,
-                datasets:[{
-                    label:'Frequency',
-                    data:data,
-                    backgroundColor:labels.map(()=>`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`),
-                    borderColor:labels.map(()=>`rgba(0,0,0,0.8)`),
-                    borderWidth:1
-                }]
-            },
+            data:{labels, datasets:[{label:'Frequency', data, backgroundColor:labels.map(()=>`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`), borderColor:labels.map(()=>`rgba(0,0,0,0.8)`), borderWidth:1}]},
             options:{responsive:true, plugins:{legend:{position:'right'}}}
         });
-
-        sol.innerHTML = `<h5>${type==='simpleBar'?'Simple Bar Diagram':'Pie Chart'}</h5>
-            <table class='table table-bordered text-center'>
-                <thead><tr><th>Category</th><th>Frequency</th><th>%</th><th>Angle (°)</th></tr></thead>
-                <tbody>${labels.map((l,i)=>`<tr>
-                    <td>${l}</td>
-                    <td>${data[i]}</td>
-                    <td>${percentages[i]}%</td>
-                    <td>${angles[i]}°</td>
-                </tr>`).join('')}</tbody>
-            </table>`;
     }
 
-    // ---------------- Multiple / Component Bar ----------------
-    if(['multipleBar','componentBar'].includes(type)){
+    // ---------------- Multiple / Component Bar (FIXED) ----------------
+    if(type==='multipleBar' || type==='componentBar'){
         let table = document.getElementById('multiTable');
         let labels=[], datasets=[];
-        for(let c=1;c<=datasetCount;c++) datasets.push({label:'Dataset '+c, data:[], backgroundColor:`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`});
 
-        for(let r=0;r<table.rows.length;r++){
-            labels.push(table.rows[r].cells[0].querySelector('input').value || 'Cat'+(r+1));
-            for(let c=1;c<=datasetCount;c++){
-                let val = Number(table.rows[r].cells[c].querySelector('input').value) || 0;
-                datasets[c-1].data.push(val);
+        for(let d=0; d<datasetCount; d++){
+            datasets.push({
+                label:'Dataset '+(d+1),
+                data:[],
+                backgroundColor:`rgba(${Math.random()*200},${Math.random()*200},${Math.random()*200},0.6)`,
+                borderColor:`rgba(0,0,0,0.8)`,
+                borderWidth:1
+            });
+        }
+
+        for(let r of table.rows){
+            labels.push(r.cells[0].querySelector('input').value || 'Cat');
+            for(let d=0; d<datasetCount; d++){
+                let val = Number(r.cells[d+1].querySelector('input').value) || 0;
+                datasets[d].data.push(val);
             }
         }
 
         chart = new Chart(ctx,{
-            type: 'bar',
-            data:{labels:labels, datasets: datasets},
+            type:'bar',
+            data:{labels, datasets},
             options:{
                 responsive:true,
                 plugins:{legend:{position:'right'}},
@@ -292,23 +244,73 @@ function generate(){
                 }
             }
         });
+    }
 
-        sol.innerHTML = `<h5>${type==='multipleBar'?'Multiple Bar Diagram':'Component (Stacked) Bar Diagram'}</h5>`;
+    // ---------------- Histogram / Polygon / Ogive ----------------
+    if(type==='histogram' || type==='polygon' || type==='ogive'){
+        let raw = document.getElementById('rawData').value.split(',').map(Number).filter(v=>!isNaN(v));
+        if(raw.length===0) return alert("Enter raw data");
+
+        let n = raw.length, k = Math.ceil(1+3.322*Math.log10(n));
+        let min = Math.min(...raw), max = Math.max(...raw);
+        let width = Math.ceil((max-min)/k);
+        let lower=[], upper=[], freq=[];
+        for(let i=0;i<k;i++){lower[i]=min+i*width; upper[i]=lower[i]+width; freq[i]=0;}
+
+        raw.forEach(v=>{
+            for(let i=0;i<k;i++){
+                if(v>=lower[i] && v<upper[i]){ freq[i]++; break;}
+                if(i===k-1 && v===max) freq[i]++;
+            }
+        });
+
+        let mid = lower.map((l,i)=>(l+upper[i])/2);
+        let cum=0, cf=freq.map(f=>cum+=f);
+
+        if(type==='histogram'){
+            chart = new Chart(ctx,{type:'bar', data:{labels: lower.map((l,i)=>`${l}-${upper[i]}`), datasets:[{label:'Frequency', data:freq, backgroundColor:'rgba(75,192,192,0.5)', borderColor:'rgba(75,192,192,1)', borderWidth:1}]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+        }
+        if(type==='polygon'){
+            chart = new Chart(ctx,{type:'line', data:{labels: mid, datasets:[{label:'Frequency Polygon', data:freq, fill:false, borderColor:'rgba(153,102,255,1)', tension:0.1}]}});
+        }
+        if(type==='ogive'){
+            chart = new Chart(ctx,{type:'line', data:{labels: upper, datasets:[{label:'Ogive', data:cf, fill:false, borderColor:'rgba(255,99,132,1)', tension:0.1}]}});
+        }
+    }
+
+    // ---------------- Stem & Leaf ----------------
+    if(type==='stemLeaf'){
+        let raw = document.getElementById('rawData').value.split(',').map(Number).filter(v=>!isNaN(v)).sort((a,b)=>a-b);
+        if(raw.length===0) return alert("Enter raw data");
+        let stemObj={};
+        raw.forEach(num=>{
+            let stem=Math.floor(num/10), leaf=num%10;
+            if(!stemObj[stem]) stemObj[stem]=[];
+            stemObj[stem].push(leaf);
+        });
+
+        let tableHTML="<h5>Stem & Leaf Plot</h5><table class='table table-bordered text-center'><thead><tr><th>Stem</th><th>Leaf</th></tr></thead><tbody>";
+        for(let s of Object.keys(stemObj).sort((a,b)=>a-b)){
+            tableHTML += `<tr><td>${s}</td><td>${stemObj[s].join(' ')}</td></tr>`;
+        }
+        tableHTML += "</tbody></table>";
+        sol.innerHTML = tableHTML;
     }
 }
 
+// ---------------- Guide ----------------
 function addGuide(type){
     let g = document.getElementById('guide');
     let guides = {
-        fd:"Enter raw data. System automatically calculates class intervals, tally, frequency, mid, cumulative frequency, relative frequency, mean, median, mode, and chart above.",
-        histogram:"Enter raw data. System will automatically calculate grouped data, frequencies, and histogram.",
-        polygon:"Enter raw data. System will automatically create frequency polygon from grouped data.",
-        ogive:"Enter raw data. System will calculate cumulative frequencies and draw ogive.",
-        simpleBar:"Enter categories and frequencies. Simple bar chart generated automatically.",
-        multipleBar:"Enter categories and multiple datasets. Multiple bar chart generated automatically.",
-        componentBar:"Enter categories and multiple datasets. Component (stacked) bar chart generated automatically.",
-        pie:"Enter categories and frequencies. Pie chart shows percentages and angles.",
-        stemLeaf:"Enter raw data. System will generate stem & leaf plot automatically."
+        fd:"Enter raw data. System calculates class intervals, frequency, mid, cumulative frequency, relative frequency, mean, median, mode.",
+        histogram:"Enter raw data. System calculates grouped data and draws histogram.",
+        polygon:"Enter raw data. System creates frequency polygon from grouped data.",
+        ogive:"Enter raw data. System calculates cumulative frequencies and draws ogive.",
+        simpleBar:"Enter categories and frequencies. Simple bar chart generated.",
+        multipleBar:"Enter categories and multiple datasets. Multiple bar chart generated.",
+        componentBar:"Enter categories and multiple datasets. Stacked bar chart generated.",
+        pie:"Enter categories and frequencies. Pie chart generated.",
+        stemLeaf:"Enter raw data. Stem & leaf plot generated automatically."
     };
     g.innerHTML = "<hr><h6>Guide</h6><p class='small-text'>"+(guides[type]||"")+"</p>";
 }
