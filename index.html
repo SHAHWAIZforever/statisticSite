@@ -21,7 +21,7 @@ table input:focus {outline: none;}
 
 <nav class="navbar navbar-dark bg-dark">
 <div class="container-fluid">
-<span class="navbar-brand"> (Beta) </span>
+<span class="navbar-brand">Advanced Statistical Graph Solution (Beta) </span>
 </div>
 </nav>
 
@@ -71,11 +71,13 @@ function renderForm(){
     let area = document.getElementById('inputArea');
     area.innerHTML = "";
 
-    if(type === 'fd'){
+    // Frequency Distribution
+    if(type==='fd'){
         area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
             <textarea id='rawFD' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
     }
 
+    // Simple Bar / Pie
     if(['simpleBar','pie'].includes(type)){
         area.innerHTML = `<label>Enter Categories and Frequencies</label>
             <table class='table table-bordered text-center'>
@@ -87,14 +89,47 @@ function renderForm(){
             <button class='btn btn-sm btn-secondary w-100' onclick='addRow("simpleTable",2)'>Add Row</button>`;
     }
 
+    // Multiple / Component Bar Diagram
+    if(['multipleBar','componentBar'].includes(type)){
+        area.innerHTML = `<label>Enter Categories and Dataset Values</label>
+            <table class='table table-bordered text-center'>
+                <thead id="multiHeader">
+                    <tr><th>Category</th><th>Dataset 1</th></tr>
+                </thead>
+                <tbody id='multiTable'>
+                    <tr><td><input></td><td><input type='number'></td></tr>
+                </tbody>
+            </table>
+            <button class='btn btn-sm btn-secondary w-100 mb-1' onclick='addRow("multiTable",2)'>Add Row</button>
+            <button class='btn btn-sm btn-secondary w-100' onclick='addDataset()'>Add Dataset Column</button>`;
+        datasetCount = 1; // keep track of datasets
+    }
+
+    // Histogram / Polygon / Ogive
     if(['histogram','polygon','ogive'].includes(type)){
         area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
             <textarea id='groupRawData' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
     }
 
+    // Stem & Leaf
     if(type==='stemLeaf'){
         area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
             <textarea id='stemData' class='form-control mb-2' placeholder="Example: 12,15,18,20"></textarea>`;
+    }
+}
+
+let datasetCount = 1;
+function addDataset(){
+    datasetCount++;
+    let header = document.getElementById("multiHeader").rows[0];
+    let th = document.createElement("th");
+    th.innerText = "Dataset " + datasetCount;
+    header.appendChild(th);
+
+    let table = document.getElementById("multiTable");
+    for(let row of table.rows){
+        let td = row.insertCell();
+        td.innerHTML = "<input type='number'>";
     }
 }
 
@@ -107,6 +142,7 @@ function addRow(id,cols){
     }
 }
 
+// Main generate function
 function generate(){
     if(chart) chart.destroy();
     let type = document.getElementById('graphType').value;
@@ -157,21 +193,14 @@ function generate(){
         let f1=freq[modalIndex], f0=modalIndex===0?0:freq[modalIndex-1], f2=modalIndex===k-1?0:freq[modalIndex+1];
         let mode = (lower[modalIndex] + ((f1-f0)/((f1-f0)+(f1-f2)))*width).toFixed(2);
 
-        // Show calculation steps
-        let calcSteps = `<div class="summary">
+        sol.innerHTML = `<div class="summary">
             <h6>Step-by-Step Calculations</h6>
             <p>Number of data points n = ${n}</p>
             <p>Number of classes k = ${k} (Sturges formula: 1 + 3.322 log10 n)</p>
-            <p>Class width w = ${width} (Range/Classes = (${max}-${min})/${k})</p>
-            <p>Midpoint = (Lower + Upper)/2 for each class</p>
-            <p>Cumulative Frequency = sum of previous frequencies up to that class</p>
-            <p>Relative Frequency % = (F/N)*100</p>
-            <p>Mean = Σ(mid × F)/N = ${mean}</p>
-            <p>Median = L + ((N/2 - CF_previous)/F) * w = ${median}</p>
-            <p>Mode = L + ((f1-f0)/((f1-f0)+(f1-f2)))*w = ${mode}</p>
-        </div>`;
-
-        sol.innerHTML = calcSteps + `<h5>Frequency Distribution Table</h5>
+            <p>Class width w = ${width} (Range/Classes)</p>
+            <p>Mean = ${mean}, Median = ${median}, Mode = ${mode}</p>
+        </div>
+        <h5>Frequency Distribution Table</h5>
         <table class='table table-bordered text-center'>
             <thead><tr><th>Class</th><th>Tally</th><th>F</th><th>Mid</th><th>CF</th><th>RF%</th></tr></thead>
             <tbody>${lower.map((l,i)=>`<tr>
@@ -194,7 +223,7 @@ function generate(){
         });
     }
 
-    // ---------------- Simple Bar / Pie ----------------
+    // ---------------- Simple / Pie ----------------
     if(['simpleBar','pie'].includes(type)){
         let table = document.getElementById('simpleTable');
         let labels=[], data=[];
@@ -234,12 +263,37 @@ function generate(){
                     <td>${percentages[i]}%</td>
                     <td>${angles[i]}°</td>
                 </tr>`).join('')}</tbody>
-            </table>
-            <div class="summary">
-                <h6>Explanation</h6>
-                <p>Percentage = (Frequency / Total) × 100</p>
-                <p>Angle for pie chart = (Percentage × 360) / 100</p>
-            </div>`;
+            </table>`;
+    }
+
+    // ---------------- Multiple / Component Bar ----------------
+    if(['multipleBar','componentBar'].includes(type)){
+        let table = document.getElementById('multiTable');
+        let labels=[], datasets=[];
+        for(let c=1;c<=datasetCount;c++) datasets.push({label:'Dataset '+c, data:[], backgroundColor:`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`});
+
+        for(let r=0;r<table.rows.length;r++){
+            labels.push(table.rows[r].cells[0].querySelector('input').value || 'Cat'+(r+1));
+            for(let c=1;c<=datasetCount;c++){
+                let val = Number(table.rows[r].cells[c].querySelector('input').value) || 0;
+                datasets[c-1].data.push(val);
+            }
+        }
+
+        chart = new Chart(ctx,{
+            type: 'bar',
+            data:{labels:labels, datasets: datasets},
+            options:{
+                responsive:true,
+                plugins:{legend:{position:'right'}},
+                scales:{
+                    x:{stacked: type==='componentBar'},
+                    y:{stacked: type==='componentBar', beginAtZero:true, precision:0}
+                }
+            }
+        });
+
+        sol.innerHTML = `<h5>${type==='multipleBar'?'Multiple Bar Diagram':'Component (Stacked) Bar Diagram'}</h5>`;
     }
 }
 
@@ -251,6 +305,8 @@ function addGuide(type){
         polygon:"Enter raw data. System will automatically create frequency polygon from grouped data.",
         ogive:"Enter raw data. System will calculate cumulative frequencies and draw ogive.",
         simpleBar:"Enter categories and frequencies. Simple bar chart generated automatically.",
+        multipleBar:"Enter categories and multiple datasets. Multiple bar chart generated automatically.",
+        componentBar:"Enter categories and multiple datasets. Component (stacked) bar chart generated automatically.",
         pie:"Enter categories and frequencies. Pie chart shows percentages and angles.",
         stemLeaf:"Enter raw data. System will generate stem & leaf plot automatically."
     };
@@ -260,5 +316,3 @@ function addGuide(type){
 
 </body>
 </html>
-
-
