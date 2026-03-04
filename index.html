@@ -173,15 +173,42 @@ function addRow(tableId, callback) {
     }
 }
 
+// function updateSimple() {
+//     let labels = [], data = [], total = 0;
+//     document.querySelectorAll('#simpleTable tbody tr').forEach(row => {
+//         labels.push(row.cells[0].querySelector('input').value || "?");
+//         let v = parseFloat(row.cells[1].querySelector('input').value) || 0;
+//         data.push(v); total += v;
+//     });
+//     getChart('chartSimpleBar', 'bar', labels, [{ label: 'Visits', data: data, backgroundColor: '#007bff' }]);
+//     getChart('chartSimplePie', 'pie', labels, [{ data: data, backgroundColor: ['#004a99', '#28a745', '#ffc107', '#dc3545', '#17a2b8'] }]);
+//     generateSolutions();
+// }
+
 function updateSimple() {
-    let labels = [], data = [], total = 0;
+    let rawLabels = [], data = [], total = 0;
+    
+    // Step 1: Get raw names and values to calculate the total
     document.querySelectorAll('#simpleTable tbody tr').forEach(row => {
-        labels.push(row.cells[0].querySelector('input').value || "?");
+        rawLabels.push(row.cells[0].querySelector('input').value || "?");
         let v = parseFloat(row.cells[1].querySelector('input').value) || 0;
-        data.push(v); total += v;
+        data.push(v); 
+        total += v;
     });
-    getChart('chartSimpleBar', 'bar', labels, [{ label: 'Visits', data: data, backgroundColor: '#007bff' }]);
-    getChart('chartSimplePie', 'pie', labels, [{ data: data, backgroundColor: ['#004a99', '#28a745', '#ffc107', '#dc3545', '#17a2b8'] }]);
+
+    // Step 2: Create a separate set of labels for the Pie Chart that include angles
+    let pieLabels = rawLabels.map((name, i) => {
+        let angle = total > 0 ? ((data[i] / total) * 360).toFixed(1) : 0;
+        return `${name} (${angle}°)`;
+    });
+
+    // Step 3: Render charts
+    // Bar chart uses original labels
+    getChart('chartSimpleBar', 'bar', rawLabels, [{ label: 'Visits', data: data, backgroundColor: '#007bff' }]);
+    
+    // Pie chart uses the labels with degrees
+    getChart('chartSimplePie', 'pie', pieLabels, [{ data: data, backgroundColor: ['#004a99', '#28a745', '#ffc107', '#dc3545', '#17a2b8'] }]);
+    
     generateSolutions();
 }
 
