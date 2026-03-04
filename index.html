@@ -1,320 +1,468 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SHAHWAIZ</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="icon" type="image/jpeg" href="icon.png">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {background: #eef2f7; font-family: "Segoe UI", sans-serif;}
-.card {border-radius: 18px;}
-canvas {max-height: 420px;}
-table input {width: 100%; border: none; text-align: center;}
-table input:focus {outline: none;}
-.small-text {font-size: 14px; color: #555;}
-.summary {background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 10px;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHAHWAIZ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --med-blue: #004a99; --med-red: #dc3545; --med-green: #28a745; }
+        body { background-color: #f1f4f9; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; padding-bottom: 80px; }
+        .hero { background: var(--med-blue); color: white; padding: 2.5rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card { border-radius: 15px; border: none; box-shadow: 0 6px 15px rgba(0,0,0,0.06); margin-bottom: 2rem; }
+        .card-header { font-weight: 700; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.5px; }
+        .definition { font-size: 0.88rem; color: #555; background: #e9ecef; padding: 12px; border-left: 5px solid var(--med-blue); margin-bottom: 15px; border-radius: 0 5px 5px 0; }
+        .table input { border: 1px solid #ced4da; border-radius: 4px; padding: 5px 10px; width: 100%; }
+        .btn-add { font-size: 0.75rem; font-weight: 700; margin-top: 10px; padding: 6px 12px; }
+        .stem-leaf { font-family: 'Courier New', monospace; background: #1a1a1a; color: #39ff14; padding: 18px; border-radius: 10px; min-height: 100px; line-height: 1.6; }
+        canvas { max-height: 320px; width: 100% !important; }
+        .solution-box { background: white; border: 2px dashed var(--med-blue); padding: 20px; border-radius: 15px; }
+    </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-dark">
-<div class="container-fluid">
-<span class="navbar-brand">BETA</span>
-</div>
-</nav>
-
-<div class="container my-4">
-<div class="row g-4">
-
-<div class="col-lg-4">
-<div class="card p-3 shadow">
-<h5>Select Statistical Tool</h5>
-<select id="graphType" class="form-select mb-3" onchange="renderForm(); addGuide(this.value);">
-<option value="fd">Frequency Distribution Table</option>
-<option value="simpleBar">Simple Bar Diagram</option>
-<option value="multipleBar">Multiple Bar Diagram</option>
-<option value="componentBar">Component Bar Diagram</option>
-<option value="histogram">Histogram</option>
-<option value="polygon">Frequency Polygon</option>
-<option value="ogive">Ogive</option>
-<option value="pie">Pie Chart</option>
-<option value="stemLeaf">Stem & Leaf</option>
-</select>
-<div id="inputArea"></div>
-<button class="btn btn-primary w-100 mt-3" onclick="generate()">Generate Solution</button>
-</div>
+<div class="hero bg-dark p-1 border-box text-center">
+    <div class="container">
+        <h1>Beta</h1>
+        <p class="lead"></p>
+    </div>
 </div>
 
-<div class="col-lg-8">
-<div class="card p-3 shadow">
-<div id="solutionArea"></div>
-<canvas id="chartCanvas"></canvas>
-<div id="guide" class="mt-4"></div>
-</div>
-</div>
+<div class="container mt-4">
 
-</div>
+    <div class="card">
+        <div class="card-header bg-primary text-white">1 & 9. Weekly Patient Visits (Simple Bar & Pie Chart)</div>
+        <div class="card-body">
+            <div class="definition"><strong>Clinical Use:</strong> Track workload distribution. High volume indicates more exposure to common cases.</div>
+            <div class="row">
+                <div class="col-lg-5">
+                    <table class="table table-bordered table-sm" id="simpleTable">
+                        <thead class="table-light"><tr><th>Department</th><th>Visits</th></tr></thead>
+                        <tbody>
+                            <tr><td><input type="text" value="Geriatrics" oninput="updateSimple()"></td><td><input type="number" value="50" oninput="updateSimple()"></td></tr>
+                            <tr><td><input type="text" value="Orthopedics" oninput="updateSimple()"></td><td><input type="number" value="45" oninput="updateSimple()"></td></tr>
+                            <tr><td><input type="text" value="Acute Care" oninput="updateSimple()"></td><td><input type="number" value="41" oninput="updateSimple()"></td></tr>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-primary btn-add" onclick="addRow('simpleTable', updateSimple)">+ ADD NEW DEPARTMENT</button>
+                </div>
+                <div class="col-md-3 text-center"><canvas id="chartSimpleBar"></canvas></div>
+                <div class="col-md-4 text-center"><canvas id="chartSimplePie"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-success text-white">2. Bilateral Strength & LSI Gap (Multiple Bar Chart)</div>
+        <div class="card-body">
+            <div class="definition"><strong>Medical Criterion:</strong> Limb Symmetry Index (LSI) should be ≥ 90% for clinical discharge.</div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <table class="table table-bordered table-sm text-center" id="multiTable">
+                        <thead class="table-light"><tr><th>Muscle Group</th><th>Injured (kg)</th><th>Healthy (kg)</th><th>LSI %</th></tr></thead>
+                        <tbody>
+                            <tr><td><input type="text" value="Quadriceps" oninput="updateMulti()"></td><td><input type="number" value="22" oninput="updateMulti()"></td><td><input type="number" value="35" oninput="updateMulti()"></td><td><span class="lsi-label">62.9</span></td></tr>
+                            <tr><td><input type="text" value="Hamstrings" oninput="updateMulti()"></td><td><input type="number" value="18" oninput="updateMulti()"></td><td><input type="number" value="28" oninput="updateMulti()"></td><td><span class="lsi-label">64.3</span></td></tr>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-success btn-add" onclick="addRow('multiTable', updateMulti)">+ ADD MUSCLE GROUP</button>
+                </div>
+                <div class="col-lg-6"><canvas id="chartMultiBar"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-dark">3. Exposure Types (Component/Subdivided Bar)</div>
+                <div class="card-body">
+                    <table class="table table-bordered table-sm" id="compTable">
+                        <thead class="table-light"><tr><th>Rotation</th><th>Inpatient</th><th>Outpatient</th></tr></thead>
+                        <tbody>
+                            <tr><td><input type="text" value="Week 1" oninput="updateComp()"></td><td><input type="number" value="20" oninput="updateComp()"></td><td><input type="number" value="15" oninput="updateComp()"></td></tr>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-info btn-sm btn-add" onclick="addRow('compTable', updateComp)">+ ADD ROTATION</button>
+                    <canvas id="chartCompBar" class="mt-3"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">6. Time-Series Trends (Historigram)</div>
+                <div class="card-body">
+                    <table class="table table-bordered table-sm" id="timeTable">
+                        <thead class="table-light"><tr><th>Time (Day/Wk)</th><th>Measurement</th></tr></thead>
+                        <tbody>
+                            <tr><td><input type="text" value="Day 1" oninput="updateTime()"></td><td><input type="number" value="10" oninput="updateTime()"></td></tr>
+                            <tr><td><input type="text" value="Day 2" oninput="updateTime()"></td><td><input type="number" value="15" oninput="updateTime()"></td></tr>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-dark btn-sm btn-add" onclick="addRow('timeTable', updateTime)">+ ADD TIME POINT</button>
+                    <canvas id="chartTimeLine" class="mt-3"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-warning">4, 5 & 8. Continuous Frequency (Histogram, Polygon, Ogive)</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="definition">Input class intervals (e.g., Blood Pressure ranges) and frequencies.</div>
+                    <table class="table table-bordered table-sm" id="freqTable">
+                        <thead class="table-light"><tr><th>Range (e.g. 10-20)</th><th>Frequency</th></tr></thead>
+                        <tbody>
+                            <tr><td><input type="text" value="10-20" oninput="updateFreq()"></td><td><input type="number" value="8" oninput="updateFreq()"></td></tr>
+                            <tr><td><input type="text" value="20-30" oninput="updateFreq()"></td><td><input type="number" value="15" oninput="updateFreq()"></td></tr>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-warning btn-sm btn-add" onclick="addRow('freqTable', updateFreq)">+ ADD INTERVAL</button>
+                </div>
+                <div class="col-lg-4"><canvas id="chartHistPoly"></canvas></div>
+                <div class="col-lg-4"><canvas id="chartOgive"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-secondary text-white">7. Stem and Leaf Plot</div>
+        <div class="card-body text-center">
+            <p>Input raw data values (comma separated, e.g., Patient Ages):</p>
+            <input type="text" id="stemInput" class="form-control mb-3 w-50 mx-auto text-center" value="22, 25, 31, 31, 34, 40, 42, 55" oninput="updateStem()">
+            <div id="stemDisplay" class="stem-leaf mx-auto w-50"></div>
+        </div>
+    </div>
+
+    <div class="solution-box text-center">
+        <h3 class="text-primary">Whole Solutions / Clinical Conclusions</h3>
+        <div id="conclusionText" class="mt-3">
+            <p>Enter data above to generate clinical findings...</p>
+        </div>
+    </div>
 </div>
 
 <script>
-let chart;
-let datasetCount = 1;
+let charts = {};
 
-// Initial load
-renderForm();
-addGuide('fd');
+function getChart(id, type, labels, datasets, options = {}) {
+    if (charts[id]) charts[id].destroy();
+    const ctx = document.getElementById(id).getContext('2d');
+    charts[id] = new Chart(ctx, { type, data: { labels, datasets }, options });
+}
 
-// ---------------- Render form ----------------
-function renderForm(){
-    let type = document.getElementById('graphType').value;
-    let area = document.getElementById('inputArea');
-    area.innerHTML = "";
-    datasetCount = 1;
-
-    if(type==='fd' || type==='histogram' || type==='polygon' || type==='ogive' || type==='stemLeaf'){
-        area.innerHTML = `<label>Enter Raw Data (comma separated)</label>
-            <textarea id='rawData' class='form-control mb-2' placeholder="12,15,18,20"></textarea>`;
-    }
-
-    if(type==='simpleBar' || type==='pie'){
-        area.innerHTML = `<label>Enter Categories and Frequencies</label>
-            <table class='table table-bordered text-center'>
-            <thead><tr><th>Category</th><th>Frequency</th></tr></thead>
-            <tbody id='simpleTable'><tr><td><input></td><td><input type='number'></td></tr></tbody>
-            </table>
-            <button class='btn btn-sm btn-secondary w-100' onclick='addRow("simpleTable",2)'>Add Row</button>`;
-    }
-
-    if(type==='multipleBar' || type==='componentBar'){
-        area.innerHTML = `<label>Enter Categories and Dataset Values</label>
-            <table class='table table-bordered text-center'>
-            <thead id='multiHeader'><tr><th>Category</th><th>Dataset 1</th></tr></thead>
-            <tbody id='multiTable'><tr><td><input></td><td><input type='number'></td></tr></tbody>
-            </table>
-            <button class='btn btn-sm btn-secondary w-100 mb-1' onclick='addRow("multiTable",2)'>Add Row</button>
-            <button class='btn btn-sm btn-secondary w-100' onclick='addDataset()'>Add Dataset Column</button>`;
+function addRow(tableId, callback) {
+    const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+    const newRow = table.insertRow();
+    const headerCells = document.getElementById(tableId).rows[0].cells.length;
+    
+    for(let i=0; i < headerCells; i++) {
+        let cell = newRow.insertCell(i);
+        if (tableId === 'multiTable' && i === 3) {
+            cell.innerHTML = '<span class="lsi-label">0.0</span>';
+        } else {
+            let input = document.createElement('input');
+            input.type = (i === 0 && tableId !== 'freqTable') ? 'text' : 'number';
+            input.oninput = callback;
+            cell.appendChild(input);
+        }
     }
 }
 
-// ---------------- Add row ----------------
-function addRow(id,cols){
-    let t = document.getElementById(id);
-    let r = t.insertRow();
-    for(let i=0;i<cols;i++){
-        let c = r.insertCell();
-        c.innerHTML = i===0?"<input>":"<input type='number'>";
-    }
+function updateSimple() {
+    let labels = [], data = [], total = 0;
+    document.querySelectorAll('#simpleTable tbody tr').forEach(row => {
+        labels.push(row.cells[0].querySelector('input').value || "?");
+        let v = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        data.push(v); total += v;
+    });
+    getChart('chartSimpleBar', 'bar', labels, [{ label: 'Visits', data: data, backgroundColor: '#007bff' }]);
+    getChart('chartSimplePie', 'pie', labels, [{ data: data, backgroundColor: ['#004a99', '#28a745', '#ffc107', '#dc3545', '#17a2b8'] }]);
+    generateSolutions();
 }
 
-// ---------------- Add dataset column ----------------
-function addDataset(){
-    datasetCount++;
-    let header = document.getElementById("multiHeader").rows[0];
-    let th = document.createElement("th");
-    th.innerText = "Dataset " + datasetCount;
-    header.appendChild(th);
-
-    let table = document.getElementById("multiTable");
-    for(let row of table.rows){
-        let td = row.insertCell();
-        td.innerHTML = "<input type='number'>";
-    }
+function updateMulti() {
+    let labels = [], inj = [], heal = [];
+    document.querySelectorAll('#multiTable tbody tr').forEach(row => {
+        labels.push(row.cells[0].querySelector('input').value || "?");
+        let vI = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        let vH = parseFloat(row.cells[2].querySelector('input').value) || 1;
+        inj.push(vI); heal.push(vH);
+        let lsi = ((vI/vH)*100).toFixed(1);
+        row.querySelector('.lsi-label').innerText = lsi;
+        row.querySelector('.lsi-label').style.color = lsi >= 90 ? 'green' : 'red';
+    });
+    getChart('chartMultiBar', 'bar', labels, [{ label: 'Injured', data: inj, backgroundColor: '#dc3545' }, { label: 'Healthy', data: heal, backgroundColor: '#28a745' }]);
+    generateSolutions();
 }
 
-// ---------------- Generate charts ----------------
-function generate(){
-    if(chart) chart.destroy();
-    let type = document.getElementById('graphType').value;
-    let ctx = document.getElementById('chartCanvas');
-    let sol = document.getElementById('solutionArea');
-    sol.innerHTML = "";
-
-    // ---------------- Frequency Distribution Table ----------------
-    if(type==='fd'){
-        let raw = document.getElementById('rawData').value.split(',').map(Number).filter(v=>!isNaN(v));
-        if(raw.length===0) return alert("Enter raw data");
-
-        let n = raw.length;
-        let k = Math.ceil(1+3.322*Math.log10(n));
-        let min = Math.min(...raw), max = Math.max(...raw);
-        let width = Math.ceil((max-min)/k);
-
-        let lower=[], upper=[], freq=[], tally=[];
-        for(let i=0;i<k;i++){
-            lower[i] = min + i*width;
-            upper[i] = lower[i] + width;
-            freq[i] = 0; tally[i]='';
-        }
-
-        raw.forEach(v=>{
-            for(let i=0;i<k;i++){
-                if(v>=lower[i] && v<upper[i]){ freq[i]++; tally[i]+='|'; break; }
-                if(i===k-1 && v===max){ freq[i]++; tally[i]+='|';}
-            }
-        });
-
-        let mid=[], cf=[], rf=[], cum=0, total=freq.reduce((a,b)=>a+b,0);
-        for(let i=0;i<k;i++){
-            mid[i] = (lower[i]+upper[i])/2;
-            cum += freq[i]; cf[i]=cum;
-            rf[i] = ((freq[i]/total)*100).toFixed(2);
-        }
-
-        let mean = (mid.reduce((s,m,i)=>s + m*freq[i],0)/total).toFixed(2);
-        let medianIndex = cf.findIndex(c=>c>=total/2);
-        let L = lower[medianIndex], F = freq[medianIndex];
-        let CF_before = medianIndex===0?0:cf[medianIndex-1];
-        let median = (L + ((total/2 - CF_before)/F)*width).toFixed(2);
-        let modalIndex = freq.indexOf(Math.max(...freq));
-        let f1=freq[modalIndex], f0=modalIndex===0?0:freq[modalIndex-1], f2=modalIndex===k-1?0:freq[modalIndex+1];
-        let mode = (lower[modalIndex] + ((f1-f0)/((f1-f0)+(f1-f2)))*width).toFixed(2);
-
-        sol.innerHTML = `<div class="summary">
-            <h6>Step-by-Step Calculations</h6>
-            <p>n=${n}, Classes k=${k}, Width=${width}</p>
-            <p>Mean=${mean}, Median=${median}, Mode=${mode}</p>
-        </div>
-        <h5>Frequency Distribution Table</h5>
-        <table class='table table-bordered text-center'>
-        <thead><tr><th>Class</th><th>Tally</th><th>F</th><th>Mid</th><th>CF</th><th>RF%</th></tr></thead>
-        <tbody>${lower.map((l,i)=>`<tr>
-            <td>${l}-${upper[i]}</td><td>${tally[i]}</td><td>${freq[i]}</td>
-            <td>${mid[i]}</td><td>${cf[i]}</td><td>${rf[i]}%</td>
-        </tr>`).join('')}</tbody></table>`;
-
-        chart = new Chart(ctx,{
-            type:'bar',
-            data:{labels: lower.map((l,i)=>`${l}-${upper[i]}`), datasets:[{label:'Frequency', data:freq, backgroundColor:'rgba(54,162,235,0.5)', borderColor:'rgba(54,162,235,1)', borderWidth:1}]},
-            options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, precision:0}}}
-        });
-    }
-
-    // ---------------- Simple Bar / Pie ----------------
-    if(type==='simpleBar' || type==='pie'){
-        let table = document.getElementById('simpleTable');
-        let labels=[], data=[];
-        for(let r of table.rows){
-            let l = r.cells[0].querySelector('input').value;
-            let v = Number(r.cells[1].querySelector('input').value);
-            if(l && !isNaN(v)){labels.push(l); data.push(v);}
-        }
-        if(labels.length===0) return alert("Enter data");
-
-        chart = new Chart(ctx,{
-            type: type==='simpleBar'?'bar':'pie',
-            data:{labels, datasets:[{label:'Frequency', data, backgroundColor:labels.map(()=>`rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.5)`), borderColor:labels.map(()=>`rgba(0,0,0,0.8)`), borderWidth:1}]},
-            options:{responsive:true, plugins:{legend:{position:'right'}}}
-        });
-    }
-
-    // ---------------- Multiple / Component Bar (FIXED) ----------------
-    if(type==='multipleBar' || type==='componentBar'){
-        let table = document.getElementById('multiTable');
-        let labels=[], datasets=[];
-
-        for(let d=0; d<datasetCount; d++){
-            datasets.push({
-                label:'Dataset '+(d+1),
-                data:[],
-                backgroundColor:`rgba(${Math.random()*200},${Math.random()*200},${Math.random()*200},0.6)`,
-                borderColor:`rgba(0,0,0,0.8)`,
-                borderWidth:1
-            });
-        }
-
-        for(let r of table.rows){
-            labels.push(r.cells[0].querySelector('input').value || 'Cat');
-            for(let d=0; d<datasetCount; d++){
-                let val = Number(r.cells[d+1].querySelector('input').value) || 0;
-                datasets[d].data.push(val);
-            }
-        }
-
-        chart = new Chart(ctx,{
-            type:'bar',
-            data:{labels, datasets},
-            options:{
-                responsive:true,
-                plugins:{legend:{position:'right'}},
-                scales:{
-                    x:{stacked: type==='componentBar'},
-                    y:{stacked: type==='componentBar', beginAtZero:true, precision:0}
-                }
-            }
-        });
-    }
-
-    // ---------------- Histogram / Polygon / Ogive ----------------
-    if(type==='histogram' || type==='polygon' || type==='ogive'){
-        let raw = document.getElementById('rawData').value.split(',').map(Number).filter(v=>!isNaN(v));
-        if(raw.length===0) return alert("Enter raw data");
-
-        let n = raw.length, k = Math.ceil(1+3.322*Math.log10(n));
-        let min = Math.min(...raw), max = Math.max(...raw);
-        let width = Math.ceil((max-min)/k);
-        let lower=[], upper=[], freq=[];
-        for(let i=0;i<k;i++){lower[i]=min+i*width; upper[i]=lower[i]+width; freq[i]=0;}
-
-        raw.forEach(v=>{
-            for(let i=0;i<k;i++){
-                if(v>=lower[i] && v<upper[i]){ freq[i]++; break;}
-                if(i===k-1 && v===max) freq[i]++;
-            }
-        });
-
-        let mid = lower.map((l,i)=>(l+upper[i])/2);
-        let cum=0, cf=freq.map(f=>cum+=f);
-
-        if(type==='histogram'){
-            chart = new Chart(ctx,{type:'bar', data:{labels: lower.map((l,i)=>`${l}-${upper[i]}`), datasets:[{label:'Frequency', data:freq, backgroundColor:'rgba(75,192,192,0.5)', borderColor:'rgba(75,192,192,1)', borderWidth:1}]}, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
-        }
-        if(type==='polygon'){
-            chart = new Chart(ctx,{type:'line', data:{labels: mid, datasets:[{label:'Frequency Polygon', data:freq, fill:false, borderColor:'rgba(153,102,255,1)', tension:0.1}]}});
-        }
-        if(type==='ogive'){
-            chart = new Chart(ctx,{type:'line', data:{labels: upper, datasets:[{label:'Ogive', data:cf, fill:false, borderColor:'rgba(255,99,132,1)', tension:0.1}]}});
-        }
-    }
-
-    // ---------------- Stem & Leaf ----------------
-    if(type==='stemLeaf'){
-        let raw = document.getElementById('rawData').value.split(',').map(Number).filter(v=>!isNaN(v)).sort((a,b)=>a-b);
-        if(raw.length===0) return alert("Enter raw data");
-        let stemObj={};
-        raw.forEach(num=>{
-            let stem=Math.floor(num/10), leaf=num%10;
-            if(!stemObj[stem]) stemObj[stem]=[];
-            stemObj[stem].push(leaf);
-        });
-
-        let tableHTML="<h5>Stem & Leaf Plot</h5><table class='table table-bordered text-center'><thead><tr><th>Stem</th><th>Leaf</th></tr></thead><tbody>";
-        for(let s of Object.keys(stemObj).sort((a,b)=>a-b)){
-            tableHTML += `<tr><td>${s}</td><td>${stemObj[s].join(' ')}</td></tr>`;
-        }
-        tableHTML += "</tbody></table>";
-        sol.innerHTML = tableHTML;
-    }
+function updateComp() {
+    let labels = [], d1 = [], d2 = [];
+    document.querySelectorAll('#compTable tbody tr').forEach(row => {
+        labels.push(row.cells[0].querySelector('input').value || "?");
+        d1.push(parseFloat(row.cells[1].querySelector('input').value) || 0);
+        d2.push(parseFloat(row.cells[2].querySelector('input').value) || 0);
+    });
+    getChart('chartCompBar', 'bar', labels, [{ label: 'Inpatient', data: d1, backgroundColor: '#17a2b8' }, { label: 'Outpatient', data: d2, backgroundColor: '#bee5eb' }], { scales: { x: { stacked: true }, y: { stacked: true } } });
 }
 
-// ---------------- Guide ----------------
-function addGuide(type){
-    let g = document.getElementById('guide');
-    let guides = {
-        fd:"Enter raw data. System calculates class intervals, frequency, mid, cumulative frequency, relative frequency, mean, median, mode.",
-        histogram:"Enter raw data. System calculates grouped data and draws histogram.",
-        polygon:"Enter raw data. System creates frequency polygon from grouped data.",
-        ogive:"Enter raw data. System calculates cumulative frequencies and draws ogive.",
-        simpleBar:"Enter categories and frequencies. Simple bar chart generated.",
-        multipleBar:"Enter categories and multiple datasets. Multiple bar chart generated.",
-        componentBar:"Enter categories and multiple datasets. Stacked bar chart generated.",
-        pie:"Enter categories and frequencies. Pie chart generated.",
-        stemLeaf:"Enter raw data. Stem & leaf plot generated automatically."
-    };
-    g.innerHTML = "<hr><h6>Guide</h6><p class='small-text'>"+(guides[type]||"")+"</p>";
+function updateTime() {
+    let labels = [], data = [];
+    document.querySelectorAll('#timeTable tbody tr').forEach(row => {
+        labels.push(row.cells[0].querySelector('input').value || "?");
+        data.push(parseFloat(row.cells[1].querySelector('input').value) || 0);
+    });
+    getChart('chartTimeLine', 'line', labels, [{ label: 'Trend', data: data, borderColor: '#333', fill: false }]);
 }
+
+function updateFreq() {
+    let labels = [], data = [], cumulative = [], sum = 0;
+    document.querySelectorAll('#freqTable tbody tr').forEach(row => {
+        labels.push(row.cells[0].querySelector('input').value || "?");
+        let v = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        data.push(v); sum += v; cumulative.push(sum);
+    });
+    getChart('chartHistPoly', 'bar', labels, [{ label: 'Histogram', data: data, backgroundColor: 'rgba(255,193,7,0.5)', barPercentage: 1, categoryPercentage: 1 }, { label: 'Polygon', data: data, type: 'line', borderColor: '#d39e00' }]);
+    getChart('chartOgive', 'line', labels, [{ label: 'Ogive', data: cumulative, borderColor: '#004a99', fill: true, backgroundColor: 'rgba(0,74,153,0.1)' }]);
+}
+
+function updateStem() {
+    let val = document.getElementById('stemInput').value.split(',').map(x => x.trim()).filter(x => x !== "").sort((a,b)=>a-b);
+    let stems = {};
+    val.forEach(v => {
+        let s = v.length > 1 ? v.slice(0, -1) : "0";
+        let l = v.slice(-1);
+        if(!stems[s]) stems[s] = [];
+        stems[s].push(l);
+    });
+    let html = "";
+    Object.keys(stems).sort((a,b)=>a-b).forEach(s => html += `<strong>${s.padStart(2, '0')}</strong> | ${stems[s].join(' ')}<br>`);
+    document.getElementById('stemDisplay').innerHTML = html || "Enter data...";
+}
+
+function generateSolutions() {
+    let text = "<h5>Clinical Findings:</h5><ul class='list-unstyled'>";
+    
+    // Rotation Solution
+    let maxVisits = 0, bestDept = "";
+    document.querySelectorAll('#simpleTable tbody tr').forEach(row => {
+        let v = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        if(v > maxVisits) { maxVisits = v; bestDept = row.cells[0].querySelector('input').value; }
+    });
+    text += `<li>✅ <strong>Workload:</strong> The <strong>${bestDept}</strong> department provides the highest clinical exposure.</li>`;
+
+    // Strength Solution
+    let deficits = [];
+    document.querySelectorAll('#multiTable tbody tr').forEach(row => {
+        let lsi = parseFloat(row.querySelector('.lsi-label').innerText);
+        if(lsi < 90) deficits.push(row.cells[0].querySelector('input').value);
+    });
+    if(deficits.length > 0) {
+        text += `<li>⚠️ <strong>Physical Therapy:</strong> Deficits found in <strong>${deficits.join(', ')}</strong>. Rehabilitation must continue until LSI reach 90%.</li>`;
+    } else {
+        text += `<li>🎉 <strong>Discharge Criteria:</strong> All muscle groups meet the 90% LSI target. Patient is ready for return-to-sport.</li>`;
+    }
+    
+    text += "</ul>";
+    document.getElementById('conclusionText').innerHTML = text;
+}
+
+window.onload = () => { updateSimple(); updateMulti(); updateComp(); updateTime(); updateFreq(); updateStem(); };
 </script>
+
+<!-- F.D -->
+ 
+
+
+
+
+
+
+
+<div class="card m-5  border-info shadow">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Part 2: Raw Data F.D. Solver (Full Solution)</h4>
+        </div>
+        <div class="card-body bg-light">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="card mb-3 shadow-sm border-0">
+                        <div class="card-header bg-white fw-bold text-info">1. Enter Raw Clinical Data</div>
+                        <div class="card-body">
+                            <p class="small text-muted">Paste comma-separated values (e.g., patient ages or BPM):</p>
+                            <textarea id="fd_rawInput" class="form-control mb-3" rows="3">65, 72, 88, 55, 91, 68, 75, 82, 77, 61, 84, 70, 73, 79, 81, 66, 89, 95, 58, 74</textarea>
+                            <button class="btn btn-info w-100 fw-bold text-white" onclick="fd_runSolver()">GENERATE FULL TABLE & STEPS</button>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white fw-bold text-info">2. Global Mathematical Steps</div>
+                        <div class="card-body" id="fd_globalSteps" style="font-size: 0.85rem; line-height: 1.6;">
+                            Calculation results will appear here...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm text-center align-middle bg-white shadow-sm">
+                            <thead class="table-dark">
+                                <tr style="font-size: 0.8rem;">
+                                    <th>Class Interval</th>
+                                    <th>Tally Marks</th>
+                                    <th>Freq (f)</th>
+                                    <th>Mid-Point</th>
+                                    <th>Rel. Freq (rf)</th>
+                                    <th>Cum. Freq (cf)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fd_tableBody" style="font-size: 0.9rem;">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-2 p-3 bg-white border rounded shadow-sm" style="font-size: 0.8rem; max-height: 150px; overflow-y: auto;">
+                        <h6 class="text-info border-bottom pb-1">Row-by-Row Calculation Proof</h6>
+                        <div id="fd_rowMathLog"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6 text-center">
+                    <span class="badge bg-secondary mb-2">Frequency Polygon & Histogram</span>
+                    <canvas id="fd_chartHistPoly"></canvas>
+                </div>
+                <div class="col-md-6 text-center">
+                    <span class="badge bg-secondary mb-2">Ogive (Cumulative Distribution)</span>
+                    <canvas id="fd_chartOgive"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // PART 2 UNIQUE NAMESPACE (Does not meddle with Part 1)
+    let fd_charts = {};
+
+    function fd_runSolver() {
+        // 1. Get and Clean Data
+        const rawString = document.getElementById('fd_rawInput').value;
+        const data = rawString.split(',')
+            .map(n => parseFloat(n.trim()))
+            .filter(n => !isNaN(n))
+            .sort((a,b) => a-b);
+
+        if(data.length === 0) { alert("Please enter numbers."); return; }
+
+        // 2. Fundamental Stats
+        const n = data.length;
+        const min = data[0];
+        const max = data[n - 1];
+        const range = max - min;
+        
+        // Sturges' Rule: k = 1 + 3.322 log10(n)
+        const k = Math.round(1 + 3.322 * Math.log10(n));
+        const h = Math.ceil(range / k);
+
+        // Update Global Steps
+        document.getElementById('fd_globalSteps').innerHTML = `
+            <strong>Range:</strong> ${max} - ${min} = <span class="text-primary">${range}</span><br>
+            <strong>Classes (k):</strong> 1 + 3.322 * log10(${n}) ≈ <span class="text-primary">${k}</span><br>
+            <strong>Interval (h):</strong> ${range} / ${k} ≈ <span class="text-primary">${h}</span><br>
+            <strong>Sample Size (n):</strong> ${n}
+        `;
+
+        // 3. Generate Table and Proofs
+        let tableRows = "";
+        let proofLogs = "";
+        let labels = [];
+        let frequencies = [];
+        let cumulativeData = [];
+        let runningSum = 0;
+        let startPoint = min;
+
+        for (let i = 0; i < k; i++) {
+            let endPoint = startPoint + h - 1;
+            let mid = (startPoint + endPoint) / 2;
+            let f = data.filter(v => v >= startPoint && v <= endPoint).length;
+            runningSum += f;
+            let rf = (f / n).toFixed(3);
+            
+            // Tally Marks
+            let tally = "";
+            for(let t=1; t<=f; t++) tally += (t % 5 === 0) ? "/ " : "|";
+
+            labels.push(`${startPoint}-${endPoint}`);
+            frequencies.push(f);
+            cumulativeData.push(runningSum);
+
+            tableRows += `
+                <tr>
+                    <td class="fw-bold">${startPoint} - ${endPoint}</td>
+                    <td class="text-info" style="letter-spacing:2px; font-weight:bold">${tally}</td>
+                    <td>${f}</td>
+                    <td>${mid}</td>
+                    <td>${rf}</td>
+                    <td class="bg-light">${runningSum}</td>
+                </tr>`;
+
+            proofLogs += `
+                <div class="mb-1 border-bottom pb-1">
+                    <strong>Row ${i+1} Math:</strong> 
+                    Midpoint: (${startPoint}+${endPoint})/2 = ${mid} | 
+                    Rel.Freq: ${f}/${n} = ${rf}
+                </div>`;
+
+            startPoint += h;
+        }
+
+        document.getElementById('fd_tableBody').innerHTML = tableRows;
+        document.getElementById('fd_rowMathLog').innerHTML = proofLogs;
+
+        // 4. Update Charts
+        fd_renderCharts(labels, frequencies, cumulativeData);
+    }
+
+    function fd_renderCharts(lbls, fData, cData) {
+        // Histogram & Polygon
+        if (fd_charts.hp) fd_charts.hp.destroy();
+        const ctxHP = document.getElementById('fd_chartHistPoly').getContext('2d');
+        fd_charts.hp = new Chart(ctxHP, {
+            type: 'bar',
+            data: {
+                labels: lbls,
+                datasets: [
+                    { label: 'Histogram', data: fData, backgroundColor: 'rgba(23, 162, 184, 0.5)', barPercentage: 1, categoryPercentage: 1 },
+                    { label: 'Polygon', data: fData, type: 'line', borderColor: '#004a99', tension: 0.3 }
+                ]
+            }
+        });
+
+        // Ogive
+        if (fd_charts.ogive) fd_charts.ogive.destroy();
+        const ctxOg = document.getElementById('fd_chartOgive').getContext('2d');
+        fd_charts.ogive = new Chart(ctxOg, {
+            type: 'line',
+            data: {
+                labels: lbls,
+                datasets: [{ label: 'Ogive (cf)', data: cData, borderColor: '#ffc107', fill: true, backgroundColor: 'rgba(255,193,7,0.1)', tension: 0.3 }]
+            }
+        });
+    }
+
+    // Initialize Solver with default data
+    const originalOnload = window.onload;
+    window.onload = function() {
+        if (originalOnload) originalOnload();
+        fd_runSolver();
+    };
+    </script>
+
 
 </body>
 </html>
